@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Kapellen Darts - Live-Spielplaner</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-color: #c9d1d9;
+            --text-muted: #8b949e;
+            --primary-gold: #d4af37;
+            --accent-blue: #58a6ff;
+            
+            /* Team Farben zur Unterscheidung */
+            --team1-color: #e3b341; /* Gold */
+            --team2-color: #58a6ff; /* Blau */
+            --team3-color: #bc8cff; /* Violett */
+            --team4-color: #3fb950; /* Grün */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header Styling */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .header-title h1 {
+            font-size: 2.2rem;
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .header-title h1 span {
+            color: var(--primary-gold);
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Info Box */
+        .info-box {
+            background-color: rgba(88, 166, 255, 0.05);
+            border: 1px solid rgba(88, 166, 255, 0.15);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #c9d1d9;
+            font-size: 0.9rem;
+        }
+
+        .info-box svg {
+            color: var(--accent-blue);
+            flex-shrink: 0;
+        }
+
+        /* Dashboard Overview Grid - 5 Kacheln */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px 15px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .stat-card .value.points {
+            color: var(--primary-gold);
+        }
+
+        /* Filters & Actions */
+        .toolbar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            min-width: 130px;
+        }
+
+        .btn {
+            background-color: #21262d;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #30363d;
+            border-color: #8b949e;
+        }
+
+        .btn.active {
+            background-color: var(--primary-gold);
+            color: #000000;
+            border-color: var(--primary-gold);
+        }
+
+        .btn-refresh {
+            background-color: #21262d;
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .btn-refresh:hover {
+            background-color: rgba(88, 166, 255, 0.1);
+        }
+
+        /* Styling für Dropdown-Menüs */
+        .select-dropdown {
+            background-color: #21262d;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .select-dropdown:hover, .select-dropdown:focus {
+            background-color: #30363d;
+            border-color: var(--primary-gold);
+        }
+
+        /* Spieltag-Sektion Styling */
+        .spieltag-section {
+            margin-bottom: 35px;
+        }
+
+        .spieltag-header-card {
+            background: linear-gradient(135deg, #161b22 0%, #21262d 100%);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-gold);
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .spieltag-header-card h2 {
+            font-size: 1.25rem;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .spieltag-header-card .badge-count {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Match Grid innerhalb eines Spieltags */
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .match-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        /* Ergebnis-Einfärbungen */
+        .match-card.win {
+            background-color: rgba(46, 160, 67, 0.12) !important;
+            border: 1.5px solid #2ea043 !important;
+        }
+
+        .match-card.loss {
+            background-color: rgba(248, 81, 73, 0.12) !important;
+            border: 1.5px solid #f85149 !important;
+        }
+
+        .match-card.draw {
+            background-color: rgba(212, 175, 55, 0.12) !important;
+            border: 1.5px solid #d4af37 !important;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .match-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Team Badges */
+        .team-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #000;
+        }
+        .team-badge.t1 { background-color: var(--team1-color); }
+        .team-badge.t2 { background-color: var(--team2-color); color: #fff; }
+        .team-badge.t3 { background-color: var(--team3-color); color: #fff; }
+        .team-badge.t4 { background-color: var(--team4-color); color: #fff; }
+
+        .match-header .type-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .match-header .type-tag.heim {
+            background-color: rgba(212, 175, 55, 0.15);
+            color: var(--primary-gold);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .match-header .type-tag.auswaerts {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .match-body {
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .match-date-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .teams-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .team-label {
+            width: 42%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .team-label.highlight {
+            color: var(--primary-gold);
+            font-weight: 800;
+        }
+
+        .vs {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: normal;
+        }
+
+        /* Results Display */
+        .result-display-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .score-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .score-badge {
+            min-width: 45px;
+            height: 36px;
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            background-color: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: #ffffff;
+        }
+
+        .score-badge.empty {
+            color: #30363d;
+            font-size: 1rem;
+        }
+
+        .score-divider {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-muted);
+        }
+
+        .legs-subtext {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .match-footer {
+            padding: 10px 15px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-status {
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .match-status.not-played { color: var(--text-muted); }
+        .match-status.win { color: #3fb950; }
+        .match-status.loss { color: #f85149; }
+        .match-status.draw { color: var(--primary-gold); }
+
+        .no-matches-msg {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+            font-size: 1rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="header-title">
+            <h1>TV Kapellen <span>Dart-Planer</span></h1>
+            <p>Chronologischer Gesamtspielplan • Live aus Google Sheets</p>
+        </div>
+        <button class="btn btn-refresh" onclick="loadMatchesFromGoogleSheets()">Aktualisieren</button>
+    </header>
+
+    <div class="info-box">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+        </svg>
+        <span>Spielplan der Dart-Mannschaften live synchronisiert.</span>
+    </div>
+
+    <!-- Live Statistics Dashboard -->
+    <div class="overview-grid">
+        <div class="stat-card">
+            <h3>Spiele Gesamt</h3>
+            <div class="value" id="stats-played">0 / 0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Punkte</h3>
+            <div class="value points" id="stats-points">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>S / U / N</h3>
+            <div class="value" id="stats-record">0 - 0 - 0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Sets</h3>
+            <div class="value" id="stats-sets">0 : 0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Legs</h3>
+            <div class="value" id="stats-legs">0 : 0</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="toolbar">
+        <!-- Auswertungs-Filter -->
+        <div class="filter-group">
+            <span class="filter-label">Auswertung Team:</span>
+            <button class="btn active" onclick="filterStatTeam('TV Kapellen 1', this)">TV Kapellen 1</button>
+            <button class="btn" onclick="filterStatTeam('TV Kapellen 2', this)">TV Kapellen 2</button>
+            <button class="btn" onclick="filterStatTeam('TV Kapellen 3', this)">TV Kapellen 3</button>
+            <button class="btn" onclick="filterStatTeam('TV Kapellen 4', this)">TV Kapellen 4</button>
+        </div>
+
+        <!-- Filter für die unten angezeigten Spiele -->
+        <div class="filter-group">
+            <span class="filter-label">Anzeige Filter:</span>
+            
+            <select class="select-dropdown" id="team-select" onchange="filterDisplayTeam(this.value)">
+                <option value="all">Alle Teams</option>
+                <option value="TV Kapellen 1">TV Kapellen 1</option>
+                <option value="TV Kapellen 2">TV Kapellen 2</option>
+                <option value="TV Kapellen 3">TV Kapellen 3</option>
+                <option value="TV Kapellen 4">TV Kapellen 4</option>
+            </select>
+
+            <button class="btn active" onclick="filterType('all', this)">Alle Spiele</button>
+            <button class="btn" onclick="filterType('heim', this)">Heimspiele</button>
+            <button class="btn" onclick="filterType('auswaerts', this)">Auswärtsspiele</button>
+            <button class="btn" onclick="filterType('played', this)">Gespielt</button>
+            
+            <select class="select-dropdown" id="spieltag-select" onchange="filterSpieltag(this.value)">
+                <option value="all">Alle Spieltage</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Container für gruppierte Spieltage -->
+    <div id="matches-container">
+        <!-- Dynamisch befüllt -->
+    </div>
+</div>
+
+<script>
+    // Eingebundener Google Sheet Link ID
+    const SHEET_ID = '1HcS4Upr42t41R8h6VxfP4wsAWqMqTNvbgIRsx54PDQo';
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+    let rawMatches = [];
+    let statSelectedTeam = "TV Kapellen 1";
+    let displaySelectedTeam = "all";
+    let selectedType = "all";
+    let selectedSpieltag = "all";
+
+    async function loadMatchesFromGoogleSheets() {
+        const container = document.getElementById("matches-container");
+        container.innerHTML = `<div class="no-matches-msg">Lade Spieldaten aus Google Sheets...</div>`;
+
+        try {
+            const response = await fetch(SHEET_URL);
+            const text = await response.text();
+            
+            // Prefix "/*O_o*/\ngoogle.visualization.Query.setResponse(...);" abschneiden
+            const startPos = text.indexOf('{');
+            const endPos = text.lastIndexOf('}') + 1;
+            const jsonData = JSON.parse(text.substring(startPos, endPos));
+            const rows = jsonData.table.rows;
+
+            rawMatches = rows.map((row, index) => {
+                const c = row.c;
+                const getVal = (idx) => (c && c[idx] && c[idx].v !== undefined && c[idx].v !== null) ? c[idx].v : null;
+                
+                // Behandelt Datumsformatierungen aus Google Sheets
+                let dateVal = getVal(2);
+                if (dateVal && typeof dateVal === 'string' && dateVal.startsWith('Date(')) {
+                    const parts = dateVal.match(/\d+/g);
+                    if (parts && parts.length >= 3) {
+                        const y = parts[0];
+                        const m = String(parseInt(parts[1]) + 1).padStart(2, '0');
+                        const d = String(parts[2]).padStart(2, '0');
+                        dateVal = `${y}-${m}-${d}`;
+                    }
+                }
+
+                return {
+                    id: getVal(0) || index + 1,
+                    spieltag: parseInt(getVal(1)) || 1,
+                    date: dateVal ? String(dateVal) : "",
+                    time: getVal(3) ? String(getVal(3)) : "",
+                    team: getVal(4) ? String(getVal(4)) : "",
+                    teamHome: getVal(5) ? String(getVal(5)) : "",
+                    teamAway: getVal(6) ? String(getVal(6)) : "",
+                    isHome: getVal(7) === true || String(getVal(7)).toUpperCase() === 'TRUE',
+                    homeScore: getVal(8) !== null ? parseInt(getVal(8)) : null,
+                    awayScore: getVal(9) !== null ? parseInt(getVal(9)) : null,
+                    homeLegs: getVal(10) !== null ? parseInt(getVal(10)) : null,
+                    awayLegs: getVal(11) !== null ? parseInt(getVal(11)) : null
+                };
+            });
+
+            // Sortierung nach Datum und Zeit
+            rawMatches.sort((a, b) => {
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return new Date(`${a.date}T${a.time.replace(' Uhr','') || '00:00'}`) - new Date(`${b.date}T${b.time.replace(' Uhr','') || '00:00'}`);
+            });
+
+            populateSpieltagDropdown();
+            renderMatches();
+        } catch (error) {
+            console.error("Fehler beim Laden der Google Sheet Daten:", error);
+            container.innerHTML = `<div class="no-matches-msg">Fehler beim Laden der Daten aus Google Sheets. Stellen Sie sicher, dass die Tabelle freigegeben ist.</div>`;
+        }
+    }
+
+    function populateSpieltagDropdown() {
+        const select = document.getElementById("spieltag-select");
+        const currentVal = select.value;
+        select.innerHTML = '<option value="all">Alle Spieltage</option>';
+        
+        const spieltage = [...new Set(rawMatches.map(m => m.spieltag))].sort((a, b) => a - b);
+        spieltage.forEach(st => {
+            const option = document.createElement("option");
+            option.value = st;
+            option.textContent = `${st}. Spieltag`;
+            select.appendChild(option);
+        });
+        select.value = currentVal;
+    }
+
+    function getTeamBadgeClass(teamName) {
+        if (teamName.includes("1")) return "t1";
+        if (teamName.includes("2")) return "t2";
+        if (teamName.includes("3")) return "t3";
+        if (teamName.includes("4")) return "t4";
+        return "t1";
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return "";
+        if (dateStr.includes('-')) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}.${month}.${year}`;
+        }
+        return dateStr;
+    }
+
+    function renderMatches() {
+        const container = document.getElementById("matches-container");
+        container.innerHTML = "";
+
+        // 1. STATISTIKEN BERECHNEN (NUR für statSelectedTeam)
+        let statsPlayed = 0;
+        let statsPoints = 0;
+        let statsWins = 0;
+        let statsDraws = 0;
+        let statsLosses = 0;
+        let statsSetsFor = 0;
+        let statsSetsAgainst = 0;
+        let statsLegsFor = 0;
+        let statsLegsAgainst = 0;
+
+        rawMatches.forEach(match => {
+            if (match.team === statSelectedTeam) {
+                const isPlayed = match.homeScore !== null && match.awayScore !== null && !isNaN(match.homeScore) && !isNaN(match.awayScore);
+                if (isPlayed) {
+                    statsPlayed++;
+                    const h = match.homeScore;
+                    const a = match.awayScore;
+                    const hLegs = match.homeLegs !== null ? match.homeLegs : 0;
+                    const aLegs = match.awayLegs !== null ? match.awayLegs : 0;
+
+                    const kapellenScore = match.isHome ? h : a;
+                    const opponentScore = match.isHome ? a : h;
+
+                    const kapellenLegs = match.isHome ? hLegs : aLegs;
+                    const opponentLegs = match.isHome ? aLegs : hLegs;
+
+                    statsSetsFor += kapellenScore;
+                    statsSetsAgainst += opponentScore;
+
+                    statsLegsFor += kapellenLegs;
+                    statsLegsAgainst += opponentLegs;
+
+                    if (kapellenScore > opponentScore) {
+                        statsPoints += 2;
+                        statsWins++;
+                    } else if (kapellenScore < opponentScore) {
+                        statsLosses++;
+                    } else {
+                        statsPoints += 1;
+                        statsDraws++;
+                    }
+                }
+            }
+        });
+
+        // Kacheln oben aktualisieren
+        const teamTotalMatches = rawMatches.filter(m => m.team === statSelectedTeam).length;
+        document.getElementById("stats-played").textContent = `${statsPlayed} / ${teamTotalMatches}`;
+        document.getElementById("stats-points").textContent = statsPoints;
+        document.getElementById("stats-record").textContent = `${statsWins} - ${statsDraws} - ${statsLosses}`;
+        document.getElementById("stats-sets").textContent = `${statsSetsFor} : ${statsSetsAgainst}`;
+        document.getElementById("stats-legs").textContent = `${statsLegsFor} : ${statsLegsAgainst}`;
+
+        // 2. SPIELE NACH SPIELTAGEN GRUPPIEREN
+        const filteredMatches = rawMatches.filter(match => {
+            if (displaySelectedTeam !== "all" && match.team !== displaySelectedTeam) return false;
+            if (selectedType === "heim" && !match.isHome) return false;
+            if (selectedType === "auswaerts" && match.isHome) return false;
+            if (selectedSpieltag !== "all" && match.spieltag != selectedSpieltag) return false;
+
+            const isPlayed = match.homeScore !== null && match.awayScore !== null && !isNaN(match.homeScore) && !isNaN(match.awayScore);
+            if (selectedType === "played" && !isPlayed) return false;
+
+            return true;
+        });
+
+        if (filteredMatches.length === 0) {
+            container.innerHTML = `<div class="no-matches-msg">Keine Spiele für die ausgewählten Filter gefunden.</div>`;
+            return;
+        }
+
+        // Nach Spieltagen gruppieren
+        const groupedBySpieltag = {};
+        filteredMatches.forEach(match => {
+            if (!groupedBySpieltag[match.spieltag]) {
+                groupedBySpieltag[match.spieltag] = [];
+            }
+            groupedBySpieltag[match.spieltag].push(match);
+        });
+
+        // 3. SPIELTAGS-SEKTIONEN UND KARTEN RENDERN
+        const sortedSpieltage = Object.keys(groupedBySpieltag).sort((a, b) => parseInt(a) - parseInt(b));
+
+        sortedSpieltage.forEach(st => {
+            const matchesForSt = groupedBySpieltag[st];
+
+            const section = document.createElement("div");
+            section.className = "spieltag-section";
+
+            // Header-Kachel für den Spieltag
+            const headerCard = document.createElement("div");
+            headerCard.className = "spieltag-header-card";
+            headerCard.innerHTML = `
+                <h2>${st}. Spieltag</h2>
+                <span class="badge-count">${matchesForSt.length} ${matchesForSt.length === 1 ? 'Spiel' : 'Spiele'}</span>
+            `;
+            section.appendChild(headerCard);
+
+            // Grid für die Match-Karten
+            const grid = document.createElement("div");
+            grid.className = "matches-grid";
+
+            matchesForSt.forEach(match => {
+                const isPlayed = match.homeScore !== null && match.awayScore !== null && !isNaN(match.homeScore) && !isNaN(match.awayScore);
+
+                let statusText = "Noch nicht gespielt";
+                let statusClass = "not-played";
+                let cardOutcomeClass = "";
+
+                if (isPlayed) {
+                    const h = match.homeScore;
+                    const a = match.awayScore;
+                    const kapellenScore = match.isHome ? h : a;
+                    const opponentScore = match.isHome ? a : h;
+
+                    if (kapellenScore > opponentScore) {
+                        statusText = "Sieg (2P)";
+                        statusClass = "win";
+                        cardOutcomeClass = "win";
+                    } else if (kapellenScore < opponentScore) {
+                        statusText = "Niederlage (0P)";
+                        statusClass = "loss";
+                        cardOutcomeClass = "loss";
+                    } else {
+                        statusText = "Unentschieden (1P)";
+                        statusClass = "draw";
+                        cardOutcomeClass = "draw";
+                    }
+                }
+
+                const card = document.createElement("div");
+                card.className = `match-card ${cardOutcomeClass}`;
+                
+                const legsInfo = isPlayed && match.homeLegs !== null && match.awayLegs !== null 
+                    ? `<div class="legs-subtext">Legs: ${match.homeLegs} : ${match.awayLegs}</div>` 
+                    : '';
+
+                card.innerHTML = `
+                    <div class="match-header">
+                        <div class="match-header-left">
+                            <span class="team-badge ${getTeamBadgeClass(match.team)}">${match.team}</span>
+                        </div>
+                        <span class="type-tag ${match.isHome ? 'heim' : 'auswaerts'}">${match.isHome ? 'Heim' : 'Auswärts'}</span>
+                    </div>
+                    <div class="match-body">
+                        <div class="match-date-info">${formatDate(match.date)} ${match.time ? '- ' + match.time : ''}</div>
+                        <div class="teams-display">
+                            <span class="team-label ${match.teamHome.includes('TV Kapellen') ? 'highlight' : ''}">${match.teamHome}</span>
+                            <span class="vs">vs</span>
+                            <span class="team-label ${match.teamAway.includes('TV Kapellen') ? 'highlight' : ''}">${match.teamAway}</span>
+                        </div>
+                        <div class="result-display-container">
+                            <div class="score-row">
+                                <div class="score-badge ${isPlayed ? '' : 'empty'}">${isPlayed ? match.homeScore : '-'}</div>
+                                <span class="score-divider">:</span>
+                                <div class="score-badge ${isPlayed ? '' : 'empty'}">${isPlayed ? match.awayScore : '-'}</div>
+                            </div>
+                            ${legsInfo}
+                        </div>
+                    </div>
+                    <div class="match-footer">
+                        <span class="match-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            section.appendChild(grid);
+            container.appendChild(section);
+        });
+    }
+
+    function filterStatTeam(team, btn) {
+        btn.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        statSelectedTeam = team;
+        renderMatches();
+    }
+
+    function filterDisplayTeam(val) {
+        displaySelectedTeam = val;
+        renderMatches();
+    }
+
+    function filterType(type, btn) {
+        btn.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedType = type;
+        renderMatches();
+    }
+
+    function filterSpieltag(val) {
+        selectedSpieltag = val;
+        renderMatches();
+    }
+
+    window.onload = () => {
+        loadMatchesFromGoogleSheets();
+    };
+</script>
+
+</body>
+</html>
