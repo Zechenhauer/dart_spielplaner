@@ -47,7 +47,7 @@
             align-items: center;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .header-title h1 {
@@ -439,7 +439,6 @@
             border-radius: 8px;
         }
 
-        /* Responsive Optimization für mobile Displays */
         @media (max-width: 600px) {
             body {
                 padding: 12px 10px;
@@ -451,7 +450,6 @@
                 gap: 15px;
             }
 
-            /* Dashboard Kacheln auf Smartphones in 2er-Spalten anordnen */
             .overview-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
@@ -469,7 +467,6 @@
                 font-size: 1.4rem;
             }
 
-            /* Filter-Buttons mobil kompakter machen */
             .filter-label {
                 min-width: 100%;
                 margin-bottom: 2px;
@@ -486,8 +483,8 @@
 <div class="container">
     <header>
         <div class="header-title">
-            <h1>TV Kapellen 1919 e.V.<span> Spieltagsplaner-Planer</span></h1>
-            <p>Chronologischer Gesamtspielplan - Saison 26/27</p>
+            <h1>TV Kapellen 1919 e.V. <span> Spieltags Planer</span></h1>
+            <p>Chronologischer Gesamtspielplan • Saison 26/27</p>
         </div>
         <button class="btn btn-refresh" onclick="loadMatchesFromGoogleSheets()">Aktualisieren</button>
     </header>
@@ -568,7 +565,6 @@
 </div>
 
 <script>
-    // Eingebundener Google Sheet Link ID
     const SHEET_ID = '1HcS4Upr42t41R8h6VxfP4wsAWqMqTNvbgIRsx54PDQo';
     const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
@@ -586,7 +582,6 @@
             const response = await fetch(SHEET_URL);
             const text = await response.text();
             
-            // Prefix "/*O_o*/\ngoogle.visualization.Query.setResponse(...);" abschneiden
             const startPos = text.indexOf('{');
             const endPos = text.lastIndexOf('}') + 1;
             const jsonData = JSON.parse(text.substring(startPos, endPos));
@@ -596,7 +591,6 @@
                 const c = row.c;
                 const getVal = (idx) => (c && c[idx] && c[idx].v !== undefined && c[idx].v !== null) ? c[idx].v : null;
                 
-                // Behandelt Datumsformatierungen aus Google Sheets
                 let dateVal = getVal(2);
                 if (dateVal && typeof dateVal === 'string' && dateVal.startsWith('Date(')) {
                     const parts = dateVal.match(/\d+/g);
@@ -621,11 +615,10 @@
                     awayScore: getVal(9) !== null ? parseInt(getVal(9)) : null,
                     homeLegs: getVal(10) !== null ? parseInt(getVal(10)) : null,
                     awayLegs: getVal(11) !== null ? parseInt(getVal(11)) : null,
-                    tabellenplatz: getVal(12) !== null ? parseInt(getVal(12)) : null // Spalte M (Index 12)
+                    tabellenplatz: getVal(12) !== null ? parseInt(getVal(12)) : null
                 };
             });
 
-            // Sortierung nach Datum und Zeit
             rawMatches.sort((a, b) => {
                 if (!a.date) return 1;
                 if (!b.date) return -1;
@@ -633,6 +626,7 @@
             });
 
             populateSpieltagDropdown();
+            setAktuellenSpieltag(); // Automatische Ermittlung des aktuellen Spieltags
             renderMatches();
         } catch (error) {
             console.error("Fehler beim Laden der Google Sheet Daten:", error);
@@ -642,7 +636,6 @@
 
     function populateSpieltagDropdown() {
         const select = document.getElementById("spieltag-select");
-        const currentVal = select.value;
         select.innerHTML = '<option value="all">Alle Spieltage</option>';
         
         const spieltage = [...new Set(rawMatches.map(m => m.spieltag))].sort((a, b) => a - b);
@@ -652,7 +645,26 @@
             option.textContent = `${st}. Spieltag`;
             select.appendChild(option);
         });
-        select.value = currentVal;
+    }
+
+    /* Ermittelt automatisch den nächsten anstehenden oder aktuellsten Spieltag */
+    function setAktuellenSpieltag() {
+        if (rawMatches.length === 0) return;
+
+        const heute = new Date().toISOString().split('T')[0];
+        
+        // Findet das erste Spiel, dessen Datum heute oder in der Zukunft liegt
+        const naechstesSpiel = rawMatches.find(m => m.date && m.date >= heute);
+
+        if (naechstesSpiel) {
+            selectedSpieltag = naechstesSpiel.spieltag;
+        } else {
+            // Falls die Saison vorbei ist, wird der letzte Spieltag gewählt
+            const maxSpieltag = Math.max(...rawMatches.map(m => m.spieltag));
+            selectedSpieltag = maxSpieltag;
+        }
+
+        document.getElementById("spieltag-select").value = selectedSpieltag;
     }
 
     function getTeamBadgeClass(teamName) {
@@ -676,7 +688,7 @@
         const container = document.getElementById("matches-container");
         container.innerHTML = "";
 
-        // 1. STATISTIKEN BERECHNEN (NUR für statSelectedTeam)
+        // 1. STATISTIKEN BERECHNEN
         let statsPlayed = 0;
         let statsPoints = 0;
         let statsWins = 0;
@@ -722,13 +734,13 @@
             }
         });
 
-        // 1b. TABELLENPLATZ ERMITTELN & KACHEL HIGHLIGHTEN
+        // Tabellenplatz ermitteln
         const teamMatchesWithPlace = rawMatches
             .filter(m => m.team === statSelectedTeam && m.tabellenplatz !== null && !isNaN(m.tabellenplatz))
-            .sort((a, b) => b.spieltag - a.spieltag); // Letzter eingetragener Spieltag zuerst
+            .sort((a, b) => b.spieltag - a.spieltag);
 
         const placeEl = document.getElementById("stats-place");
-        placeEl.className = "value"; // Klassen zurücksetzen
+        placeEl.className = "value";
 
         if (teamMatchesWithPlace.length > 0) {
             const currentPlace = teamMatchesWithPlace[0].tabellenplatz;
@@ -742,7 +754,6 @@
             placeEl.textContent = "-";
         }
 
-        // Kacheln oben aktualisieren
         const teamTotalMatches = rawMatches.filter(m => m.team === statSelectedTeam).length;
         document.getElementById("stats-played").textContent = `${statsPlayed} / ${teamTotalMatches}`;
         document.getElementById("stats-points").textContent = statsPoints;
@@ -750,7 +761,7 @@
         document.getElementById("stats-sets").textContent = `${statsSetsFor} : ${statsSetsAgainst}`;
         document.getElementById("stats-legs").textContent = `${statsLegsFor} : ${statsLegsAgainst}`;
 
-        // 2. SPIELE NACH SPIELTAGEN GRUPPIEREN
+        // 2. SPIELE FILTERN
         const filteredMatches = rawMatches.filter(match => {
             if (displaySelectedTeam !== "all" && match.team !== displaySelectedTeam) return false;
             if (selectedType === "heim" && !match.isHome) return false;
@@ -768,7 +779,7 @@
             return;
         }
 
-        // Nach Spieltagen gruppieren
+        // Gruppierung nach Spieltag
         const groupedBySpieltag = {};
         filteredMatches.forEach(match => {
             if (!groupedBySpieltag[match.spieltag]) {
@@ -777,7 +788,6 @@
             groupedBySpieltag[match.spieltag].push(match);
         });
 
-        // 3. SPIELTAGS-SEKTIONEN UND KARTEN RENDERN
         const sortedSpieltage = Object.keys(groupedBySpieltag).sort((a, b) => parseInt(a) - parseInt(b));
 
         sortedSpieltage.forEach(st => {
@@ -786,7 +796,6 @@
             const section = document.createElement("div");
             section.className = "spieltag-section";
 
-            // Header-Kachel für den Spieltag
             const headerCard = document.createElement("div");
             headerCard.className = "spieltag-header-card";
             headerCard.innerHTML = `
@@ -795,7 +804,6 @@
             `;
             section.appendChild(headerCard);
 
-            // Grid für die Match-Karten
             const grid = document.createElement("div");
             grid.className = "matches-grid";
 
