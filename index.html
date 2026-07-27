@@ -324,7 +324,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             flex-grow: 1;
         }
 
@@ -334,6 +334,15 @@
             font-weight: 600;
         }
 
+        /* Dezent styling für die Spielstätte */
+        .match-venue-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+
         .teams-display {
             display: flex;
             justify-content: space-between;
@@ -341,6 +350,7 @@
             width: 100%;
             font-size: 0.95rem;
             font-weight: bold;
+            margin-top: 4px;
         }
 
         .team-label {
@@ -483,7 +493,7 @@
 <div class="container">
     <header>
         <div class="header-title">
-            <h1>TV Kapellen 1919 e.V. <span> Spieltags Planer</span></h1>
+            <h1>TV Kapellen 1919 e.V. <span> Spieltags - Planer</span></h1>
             <p>Chronologischer Gesamtspielplan • Saison 26/27</p>
         </div>
         <button class="btn btn-refresh" onclick="loadMatchesFromGoogleSheets()">Aktualisieren</button>
@@ -615,7 +625,8 @@
                     awayScore: getVal(9) !== null ? parseInt(getVal(9)) : null,
                     homeLegs: getVal(10) !== null ? parseInt(getVal(10)) : null,
                     awayLegs: getVal(11) !== null ? parseInt(getVal(11)) : null,
-                    tabellenplatz: getVal(12) !== null ? parseInt(getVal(12)) : null
+                    tabellenplatz: getVal(12) !== null ? parseInt(getVal(12)) : null,
+                    venue: getVal(13) ? String(getVal(13)) : null // Spalte N (Index 13) falls im Sheet gepflegt
                 };
             });
 
@@ -626,7 +637,7 @@
             });
 
             populateSpieltagDropdown();
-            setAktuellenSpieltag(); // Automatische Ermittlung des aktuellen Spieltags
+            setAktuellenSpieltag();
             renderMatches();
         } catch (error) {
             console.error("Fehler beim Laden der Google Sheet Daten:", error);
@@ -647,19 +658,15 @@
         });
     }
 
-    /* Ermittelt automatisch den nächsten anstehenden oder aktuellsten Spieltag */
     function setAktuellenSpieltag() {
         if (rawMatches.length === 0) return;
 
         const heute = new Date().toISOString().split('T')[0];
-        
-        // Findet das erste Spiel, dessen Datum heute oder in der Zukunft liegt
         const naechstesSpiel = rawMatches.find(m => m.date && m.date >= heute);
 
         if (naechstesSpiel) {
             selectedSpieltag = naechstesSpiel.spieltag;
         } else {
-            // Falls die Saison vorbei ist, wird der letzte Spieltag gewählt
             const maxSpieltag = Math.max(...rawMatches.map(m => m.spieltag));
             selectedSpieltag = maxSpieltag;
         }
@@ -835,6 +842,11 @@
                     }
                 }
 
+                // Ermittlung der Spielstätte
+                const venueText = match.isHome 
+                    ? '📍 JZ Henri, Industriestr. 9b, 47447 Moers' 
+                    : (match.venue ? `📍 ${match.venue}` : '📍 Auswärtsspielstätte');
+
                 const card = document.createElement("div");
                 card.className = `match-card ${cardOutcomeClass}`;
                 
@@ -851,6 +863,7 @@
                     </div>
                     <div class="match-body">
                         <div class="match-date-info">${formatDate(match.date)} ${match.time ? '- ' + match.time : ''}</div>
+                        <div class="match-venue-info">${venueText}</div>
                         <div class="teams-display">
                             <span class="team-label ${match.teamHome.includes('TV Kapellen') ? 'highlight' : ''}">${match.teamHome}</span>
                             <span class="vs">vs</span>
