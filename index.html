@@ -57,7 +57,7 @@
             letter-spacing: -1px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             flex-wrap: wrap;
         }
 
@@ -65,12 +65,13 @@
             color: var(--primary-gold);
         }
 
-        /* Logo rechts neben der Überschrift */
+        /* Vergrößertes Logo rechts neben der Überschrift */
         .header-logo {
-            height: 42px;
+            height: 65px;
             width: auto;
             object-fit: contain;
             vertical-align: middle;
+            flex-shrink: 0;
         }
 
         .header-title p {
@@ -475,10 +476,11 @@
 
             .header-title h1 {
                 font-size: 1.6rem;
+                gap: 10px;
             }
 
             .header-logo {
-                height: 32px;
+                height: 45px;
             }
 
             .overview-grid {
