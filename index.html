@@ -511,13 +511,6 @@
     let adminCurrentSpieltag = 1;
     let rawMatches = [];
 
-    // Fallback-Daten falls Tabelle leer ist
-    const initialSeedData = [
-        { id: 1, spieltag: 1, date: "2026-09-05", time: "19.00", team: "TV Kapellen 3", team_home: "TV Kapellen 2", team_away: "TV Kapellen 3", is_home: false, home_score: 7, away_score: 3, home_legs: 16, away_legs: 10, tabellenplatz: 6, venue: "Jugendzentrum Henri, Industriestr. 9b, 47447 Moers" },
-        { id: 2, spieltag: 2, date: "2026-09-18", time: "19.00", team: "TV Kapellen 3", team_home: "TV Kapellen 3", team_away: "DSC Goch 3", is_home: true, home_score: null, away_score: null, home_legs: null, away_legs: null, tabellenplatz: null, venue: "Jugendzentrum Henri, Industriestr. 9b, 47447 Moers" },
-        { id: 3, spieltag: 3, date: "2026-09-25", time: "19.00", team: "TV Kapellen 3", team_home: "Rumelner TV 3", team_away: "TV Kapellen 3", is_home: false, home_score: null, away_score: null, home_legs: null, away_legs: null, tabellenplatz: null, venue: "Am Sportplatz 15, 47239 Duisburg" }
-    ];
-
     let statSelectedTeam = "TV Kapellen 1";
     let displaySelectedTeam = "all";
     let selectedType = "all";
@@ -552,12 +545,8 @@
                 document.getElementById('syncStatus').textContent = '● Cloud Verbunden';
                 document.getElementById('syncStatus').style.color = '#2ea043';
             } else {
-                // Initial befüllen falls leer
-                for(let item of initialSeedData) {
-                    await supabaseClient.from('spieltage_planer').insert([item]);
-                }
-                loadFromCloud();
-                return;
+                document.getElementById('syncStatus').textContent = '● Keine Daten';
+                document.getElementById('syncStatus').style.color = '#f85149';
             }
         } catch (e) {
             console.error('Ladefehler:', e);
@@ -713,32 +702,30 @@
             return;
         }
 
-        let newId = rawMatches.length > 0 ? Math.max(...rawMatches.map(m => m.id)) + 1 : 1;
-
-        let newMatch = {
-            id: newId,
+        let dbRow = {
             spieltag: st,
             date: date,
             time: time,
             team: team,
-            teamHome: teamHome,
-            teamAway: teamAway,
-            isHome: isHome,
-            homeScore: null,
-            awayScore: null,
-            homeLegs: null,
-            awayLegs: null,
+            team_home: teamHome,
+            team_away: teamAway,
+            is_home: isHome,
+            home_score: null,
+            away_score: null,
+            home_legs: null,
+            away_legs: null,
             tabellenplatz: null,
             venue: isHome ? "Jugendzentrum Henri, Industriestr. 9b, 47447 Moers" : venue
         };
 
-        rawMatches.push(newMatch);
-        await saveMatchToCloud(newMatch);
+        let { error } = await supabaseClient.from('spieltage_planer').insert([dbRow]);
+        if (error) {
+            alert("Fehler beim Hinzufügen: " + error.message);
+            return;
+        }
 
-        adminCurrentSpieltag = st;
-        renderAdminInputs();
-        initApp();
         alert("Neues Spiel erfolgreich zur Datenbank hinzugefügt!");
+        loadFromCloud();
     }
 
     function initApp() {
